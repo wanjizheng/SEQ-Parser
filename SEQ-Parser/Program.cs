@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -14,6 +15,18 @@ namespace SEQ_Parser
 
         public static fmMain myfmMain;
 
+        public static CFunctions myCFun;
+
+        public static ArrayList myAL_Key;
+
+        public static ArrayList myAL_Data;
+
+        public static ArrayList myAL_Undefined;
+
+        public static string strFileName_Key;
+
+        public static string strFileName_Data;
+
 
         [STAThread]
         static void Main()
@@ -22,6 +35,7 @@ namespace SEQ_Parser
             Application.SetCompatibleTextRenderingDefault(false);
 
             myfmMain = new fmMain();
+            myCFun = new CFunctions();
 
             Application.Run(myfmMain);
         }
