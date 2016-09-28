@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Threading;
 
 namespace SEQ_Parser
 {
@@ -14,14 +15,15 @@ namespace SEQ_Parser
 
         public CFunctions()
         {
-            
+
         }
 
         public void ImportKey(string _filename)
         {
             try
             {
-                FileStream myFileStream_Key = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                FileStream myFileStream_Key = new FileStream(_filename, FileMode.Open, FileAccess.Read,
+                    FileShare.ReadWrite);
                 StreamReader myStreamReader_Key = new StreamReader(myFileStream_Key);
 
                 string strLine;
@@ -46,7 +48,8 @@ namespace SEQ_Parser
         {
             try
             {
-                FileStream myFileStream_Data = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                FileStream myFileStream_Data = new FileStream(_filename, FileMode.Open, FileAccess.Read,
+                    FileShare.ReadWrite);
                 StreamReader myStreamReader_Data = new StreamReader(myFileStream_Data);
 
                 string strLine;
@@ -56,12 +59,12 @@ namespace SEQ_Parser
                     strLine.Trim();
                     string[] strTemp = strLine.Split('\t');
 
-                    SeqData mySD = new SeqData(strTemp[0],strTemp[1].Replace("\"",""),strTemp[2]);
+                    SeqData mySD = new SeqData(strTemp[0], strTemp[1].Replace("\"", ""), strTemp[2]);
 
 
                     Program.myAL_Data.Add(mySD);
                 }
-                MessageBox.Show(Program.myAL_Data.Count + " Keys have been imported", "Successful");
+                MessageBox.Show(Program.myAL_Data.Count + " Data have been imported", "Successful");
             }
             catch (Exception e)
             {
@@ -70,15 +73,136 @@ namespace SEQ_Parser
             }
         }
 
-        public void WriteToFile(string _data)
+        public void CombineFile()
         {
-            FileInfo myFI = new FileInfo(Program.strFileName_Data);
-            FileStream myFS = new FileStream(myFI.DirectoryName+"/Result.txt", FileMode.Create);
+            try
+            {
+                Program.myAL_File = new ArrayList();
+                for (int i = 0; i < Program.myfmMain.listBox_FileList.Items.Count; i++)
+                {
+                    FileStream myFS_Data = new FileStream(Program.myfmMain.listBox_FileList.Items[i].ToString(), FileMode.Open,
+                        FileAccess.Read, FileShare.ReadWrite);
+                    StreamReader mySR_Data = new StreamReader(myFS_Data);
+                    string strLine;
+                    while ((strLine = mySR_Data.ReadLine()) != null)
+                    {
+                        strLine.Trim();
+                        string[] strTemp = strLine.Split('\t');
+
+                        SeqData mySD = new SeqData(strTemp[1], strTemp[4].Replace("\"", ""), strTemp[2]);
+
+
+                        Program.myAL_File.Add(mySD);
+                    }
+                }
+
+                
+
+                Program.myAL_Temp = new List<SeqData>();
+                
+                
+                for (int x = 0; x < Program.myAL_File.Count; x++)
+                {
+                    SeqData mySD = (SeqData)Program.myAL_File[x];
+                    SeqData mySD1 = null;
+
+                    if (x == 0)
+                    {
+                        Program.myAL_Temp.Add(mySD);
+                    }
+                    else
+                    {
+                        bool ToF = false;
+                        for (int j = Program.myAL_Temp.Count-1; j >=0 ; j--)
+                        {
+                            mySD1 = Program.myAL_Temp[j];
+                            if (mySD1.ID == mySD.ID)
+                            {
+                                string strData = mySD1.Data + ", " + mySD.Data;
+                                mySD1 = new SeqData(mySD1.ID, strData, mySD1.Time);
+
+                                Program.myAL_Temp.Insert(j, mySD1);
+                                Program.myAL_Temp.RemoveAt(j + 1);
+                                ToF = true;
+                                break;
+                            }
+                        }
+                        if (!ToF)
+                        {
+                            Program.myAL_Temp.Add(mySD);
+                        }
+                        Program.intProcessedNumber = x;
+                    }
+                    
+                }
+
+                string strFinalData = DataBuilder(Program.myAL_Temp);
+
+                WriteToFile(strFinalData, "DATA");
+
+
+                //MessageBox.Show(Program.myAL_File.Count+" Data have been imported!");
+
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.ToString(), "Error...");
+                throw;
+            }
+        }
+
+        public string DataBuilder(ArrayList _al)
+        {
+            StringBuilder mySB = new StringBuilder();
+
+            for (int i = 0; i < _al.Count; i++)
+            {
+                SeqData mySD = (SeqData)_al[i];
+                mySB.Append(mySD.ID).Append("\t");
+
+                string strData = Program.myCFun.AnalyseData(mySD.Data);
+                mySB.Append(strData).Append("\t").Append(mySD.Time).Append("\r\n");
+            }
+
+            return mySB.ToString();
+        }
+
+        public string DataBuilder(List<SeqData> _al)
+        {
+            StringBuilder mySB = new StringBuilder();
+
+            for (int i = 0; i < _al.Count; i++)
+            {
+                SeqData mySD = (SeqData)_al[i];
+                mySB.Append(mySD.ID).Append("\t");
+
+                
+                mySB.Append(mySD.Data).Append("\t").Append(mySD.Time).Append("\r\n");
+            }
+
+            return mySB.ToString();
+        }
+
+
+        public void WriteToFile(string _data, string _filename)
+        {
+            FileInfo myFI;
+            if (Program.strFileName_Data != null)
+            {
+                myFI = new FileInfo(Program.strFileName_Data);
+            }
+            else
+            {
+                myFI = new FileInfo(Program.myfmMain.listBox_FileList.Items[0].ToString());
+            }
+            FileStream myFS = new FileStream(myFI.DirectoryName+"/"+_filename+".txt", FileMode.Create);
             StreamWriter mySW = new StreamWriter(myFS);
             mySW.Write(_data);
             mySW.Flush();
             mySW.Close();
             myFS.Close();
+            MessageBox.Show("Done! Please see the "+_filename+".txt file.");
+
         }
 
         public string AnalyseData(string _data)

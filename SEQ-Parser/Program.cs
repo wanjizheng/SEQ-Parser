@@ -23,6 +23,12 @@ namespace SEQ_Parser
 
         public static ArrayList myAL_Undefined;
 
+        public static ArrayList myAL_File;
+
+        public static List<SeqData> myAL_Temp = new List<SeqData>();
+
+        public static int intProcessedNumber = 0;
+
         public static string strFileName_Key;
 
         public static string strFileName_Data;
